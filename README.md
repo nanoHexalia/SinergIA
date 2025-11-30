@@ -1,0 +1,2 @@
+# SinergIA
+Sistema para cobranza
