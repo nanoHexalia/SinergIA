@@ -1,0 +1,16 @@
+# Historias de usuario – SinergIA
+
+HU1 – Priorización de casos de cobro  
+Como analista de cobros, quiero ver una lista priorizada de clientes según su probabilidad de pago y antigüedad de la deuda, para enfocar mis llamadas en los casos con mayor impacto.
+
+HU2 – Historial de contactos por cliente  
+Como asesor de cobros, quiero ver el historial de contactos (llamadas / mensajes) de cada cliente, para saber qué gestión se ha realizado antes de llamarlo de nuevo.
+
+HU3 – Tablero de indicadores diarios  
+Como jefe de operaciones de cobro, quiero ver un tablero con indicadores diarios (contactabilidad, promesas de pago, pagos realizados), para tomar decisiones rápidas sobre la estrategia del día.
+
+HU4 – Filtros por campaña y segmento  
+Como coordinador de campañas, quiero filtrar la cartera por campaña y segmento (producto, rango de mora, ciudad), para asignar mejor la base de clientes a cada equipo.
+
+HU5 – Exportación de base priorizada  
+Como líder de plataforma, quiero exportar la base priorizada en un archivo descargable (por ejemplo, CSV o XLSX), para cargarla en el marcador / Genesys sin reprocesar manualmente.
