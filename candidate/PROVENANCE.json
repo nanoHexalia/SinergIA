@@ -1,0 +1,12 @@
+{
+  "source_name": "sinergia_cobranzas_20260211_01_checking.py",
+  "source_drive_id": "1uU5yn8uq7_FFie2M8HOMOstTBNUYkRvP",
+  "source_parent_drive_id": "1SI_0a6o5ewz-qCQ6Xkp6oPwFcUBx8T69",
+  "source_size_bytes": 642479,
+  "source_sha256": "60e45001b91a1d41faf095fccd56a03462dffe42b1b0ea5f5ed19fe5709a89db",
+  "base_main_sha": "537de761035c6b0cf7c2c5693af444eb051a2f36",
+  "config_current_id": "12LoMTA8MirP9GIiG3VOInVejGNlvBMYZp9_mmSJbUhM",
+  "human_gate": "HG-SCOL-CONFIG-PHASEB2-CANDIDATE-MATERIALIZATION-001",
+  "runtime_activation_authorized": false,
+  "merge_to_main_authorized": false
+}
