@@ -122,32 +122,41 @@ class CleanEngineExecutionTests(unittest.TestCase):
         self.assertEqual(qa["applied"][0]["failed_cells"], 1)
         self.assertTrue(any("RULE_VALIDATION_FAILURE:PHONE_DIGITS" in w for w in qa["warn"]))
 
-    def test_current_enabled_shape_yields_19_exact_bindings_and_12_failures(self):
-        row1_targets = ["TipoDocumento","NombreCompleto","DireccionCliente","EstadoCentrales","ConsecutivoAlmacen","Credito","CodigoInterno","Almacen","NombreAlmacen","DireccionAlmacen","ReglaCarteraCodigo","TieneCompromiso","Email"]
-        row2_targets = row1_targets[:-1]
+    def test_current_enabled_shape_yields_20_exact_bindings_zero_failures_for_both_datasets(self):
+        text_targets = ["TipoDocumento","NombreCompleto","DireccionCliente","EstadoCentrales","Credito","Almacen","DireccionAlmacen"]
         phone_targets = ["Telefono1","Telefono2","Telefono3","Telefono4","TelefonoAlmacen"]
         extra_structures = pd.concat([STRUCTURES, pd.DataFrame([
             {"ArchivoLogico":"IN_SISTECREDITO","NombreColumna":"Tipo de Documento","AliasCanonico":"TipoDocumento"},
         ])], ignore_index=True)
-        present_aliases = ["TipoDocumento","NombreCompleto","DireccionCliente","EstadoCentrales","Credito","Almacen","DireccionAlmacen",*phone_targets]
+        present_aliases = [*text_targets, "DocumentoDeIdentidad", *phone_targets]
         df = pd.DataFrame({c: [" X "] for c in present_aliases})
+        df["DocumentoDeIdentidad"] = ["1.234"]
         df["Telefono1"] = ["3001234567"]
         df["Telefono2"] = ["3001234568"]
         df["Telefono3"] = ["3001234569"]
         df["Telefono4"] = ["3001234570"]
         df["TelefonoAlmacen"] = ["6041234567"]
-        spec = pd.DataFrame([
-            _spec(json_dumps(row1_targets), "TXT_TRIM_SPACES", "TEXT_TRIM", 10),
-            _spec(json_dumps(row2_targets), "TXT_STRIP_ACCENTS", "TEXT_UNICODE", 20),
-            _spec('["DocumentoDelIdentidad"]', "DOC_DI_NORMALIZE", "DOC_NORMALIZE", 30, "info", "set_null"),
-            _spec(json_dumps(phone_targets), "PHONE_DIGITS", "PHONE_DIGITS", 40, "warn", "set_null"),
-        ])
-        _, qa = apply_cleanengine_candidate(df, "df_final_sorted", df_spec=spec, df_presets=PRESETS, df_estructuras=extra_structures)
-        self.assertEqual(qa["binding"]["resolved_count"], 19)
-        self.assertEqual(qa["binding"]["failure_count"], 12)
-        self.assertEqual(len(qa["applied"]), 3)
-        unique_unbound = {f["requested_target"] for f in qa["binding"]["failures"] if f["code"] == "UNBOUND_CONFIG_TARGET"}
-        self.assertEqual(unique_unbound, {"ConsecutivoAlmacen","CodigoInterno","NombreAlmacen","ReglaCarteraCodigo","TieneCompromiso","Email","DocumentoDelIdentidad"})
+
+        for alias in ("df_final_sorted", "df_in_full"):
+            with self.subTest(dataset_alias=alias):
+                spec = pd.DataFrame([
+                    _spec(json_dumps(text_targets), "TXT_TRIM_SPACES", "TEXT_TRIM", 10, alias=alias),
+                    _spec(json_dumps(text_targets), "TXT_STRIP_ACCENTS", "TEXT_UNICODE", 20, alias=alias),
+                    _spec('["DocumentoDeIdentidad"]', "DOC_DI_NORMALIZE", "DOC_NORMALIZE", 30, "info", "set_null", alias=alias),
+                    _spec(json_dumps(phone_targets), "PHONE_DIGITS", "PHONE_DIGITS", 40, "warn", "set_null", alias=alias),
+                ])
+                _, qa = apply_cleanengine_candidate(
+                    df,
+                    alias,
+                    df_spec=spec,
+                    df_presets=PRESETS,
+                    df_estructuras=extra_structures,
+                )
+                self.assertEqual(qa["binding"]["resolved_count"], 20)
+                self.assertEqual(qa["binding"]["failure_count"], 0)
+                self.assertEqual(qa["binding"]["failures"], [])
+                self.assertEqual(len(qa["applied"]), 4)
+                self.assertFalse(qa["hard_fail"])
 
 
 def json_dumps(value):
