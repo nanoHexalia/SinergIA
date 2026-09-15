@@ -26,7 +26,7 @@ def validate_u2_evidence(qa: Mapping[str, Any]) -> dict[str, Any]:
     """Promotion evidence only; does not invent severity/action_on_fail semantics.
 
     A U2 candidate cannot be considered demonstrated unless at least one rule ran.
-    Warnings remain REVIEW_REQUIRED until their canonical severity/action behavior is wired.
+    Warnings remain REVIEW_REQUIRED at the candidate promotion boundary; canonical severity/action precedence is resolved separately from Config evidence.
     """
     applied = list((qa or {}).get("applied") or [])
     warnings = list((qa or {}).get("warn") or [])
