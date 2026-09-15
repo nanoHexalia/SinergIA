@@ -25,6 +25,7 @@ def execute_u2_cleanengine(
         dataset_alias,
         df_spec=frames.spec,
         df_presets=frames.presets,
+        df_estructuras=frames.structures,
         overrides_enabled_by_rule_id=dict(overrides_enabled_by_rule_id or {}),
         overrides_enabled_by_preset_id=dict(overrides_enabled_by_preset_id or {}),
     )
@@ -87,6 +88,7 @@ def execute_u2_candidate(
             dataset_alias,
             df_spec=frames.spec,
             df_presets=frames.presets,
+            df_estructuras=frames.structures,
             overrides_enabled_by_rule_id=dict(overrides_enabled_by_rule_id or {}),
             overrides_enabled_by_preset_id=dict(overrides_enabled_by_preset_id or {}),
         )

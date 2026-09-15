@@ -13,6 +13,7 @@ CURRENT_CONFIG_SPREADSHEET_ID = "12LoMTA8MirP9GIiG3VOInVejGNlvBMYZp9_mmSJbUhM"
 class CleanEngineFrames:
     presets: Any
     spec: Any
+    structures: Any = None
 
 def normalize_cleanengine_config(value: Mapping[str, Any]) -> CleanEngineFrames:
     """Resolve the demonstrated 20260211 dict contract without tuple-unpacking keys."""
@@ -20,7 +21,7 @@ def normalize_cleanengine_config(value: Mapping[str, Any]) -> CleanEngineFrames:
         raise TypeError("CleanEngine config must be a mapping with presets/spec")
     if "presets" not in value or "spec" not in value:
         raise KeyError("CleanEngine config requires presets and spec")
-    return CleanEngineFrames(presets=value["presets"], spec=value["spec"])
+    return CleanEngineFrames(presets=value["presets"], spec=value["spec"], structures=value.get("structures", value.get("estructuras")))
 
 def validate_u2_evidence(qa: Mapping[str, Any]) -> dict[str, Any]:
     """Promotion evidence only; does not invent severity/action_on_fail semantics.
@@ -30,6 +31,9 @@ def validate_u2_evidence(qa: Mapping[str, Any]) -> dict[str, Any]:
     """
     applied = list((qa or {}).get("applied") or [])
     warnings = list((qa or {}).get("warn") or [])
+    hard_fail = bool((qa or {}).get("hard_fail"))
+    if hard_fail:
+        return {"promotion_ok": False, "status": "FAIL_HARD_RULE", "applied_rules_count": len(applied), "warn_count": len(warnings)}
     if not applied:
         return {"promotion_ok": False, "status": "FAIL_NO_RULES_APPLIED", "applied_rules_count": 0, "warn_count": len(warnings)}
     if warnings:
