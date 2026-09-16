@@ -206,3 +206,24 @@ def resolve_dataset_contract(
                 raise ValueError(f"ambiguous Estructuras canonical token {token!r}")
             token_owner[token] = column.name
     return DatasetContract(system=system, logical_file=logical_file, columns=tuple(columns))
+
+
+def resolve_dataset_column(
+    contract: DatasetContract,
+    token: str,
+) -> DatasetColumnContract:
+    """Resolve one column by exact physical name or exact canonical alias."""
+    if not isinstance(contract, DatasetContract):
+        raise TypeError("contract must be a DatasetContract")
+    wanted = _text(token)
+    if not wanted:
+        raise ValueError("dataset column token must be non-empty")
+    matches = [
+        column for column in contract.columns
+        if wanted == column.name or (column.alias and wanted == column.alias)
+    ]
+    if len(matches) != 1:
+        raise ValueError(
+            f"dataset column token must resolve exactly once: {token!r}; matches={len(matches)}"
+        )
+    return matches[0]
