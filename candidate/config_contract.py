@@ -94,3 +94,115 @@ def resolve_clean_rule_policy(
     params = _json_object(_first(preset, ("params_json", "ParamsJson", "PARAMS_JSON"), None))
     params.update(_json_object(_first(spec_row, ("params_json", "ParamsJson", "PARAMS_JSON"), None)))
     return CleanRulePolicy(preset_id=preset_id, rule_id=rule_id, severity=severity, action_on_fail=action, params=params)
+
+
+@dataclass(frozen=True)
+class DatasetColumnContract:
+    order: int
+    name: str
+    alias: str
+    data_type: str
+    required: bool
+    nullable: bool
+
+
+@dataclass(frozen=True)
+class DatasetContract:
+    system: str
+    logical_file: str
+    columns: tuple[DatasetColumnContract, ...]
+
+    @property
+    def columns_ordered(self) -> tuple[str, ...]:
+        return tuple(column.name for column in self.columns)
+
+    @property
+    def required_columns(self) -> tuple[str, ...]:
+        return tuple(column.name for column in self.columns if column.required)
+
+
+def _strict_bool(value: Any, *, field: str) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = _text(value).casefold()
+    truthy = {"1", "true", "verdadero", "si", "sí", "yes"}
+    falsy = {"0", "false", "falso", "no"}
+    if text in truthy:
+        return True
+    if text in falsy:
+        return False
+    raise ValueError(f"{field} must be an explicit boolean value; got {value!r}")
+
+
+def _positive_integer(value: Any, *, field: str) -> int:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field} must be an integer; got {value!r}") from exc
+    integer = int(number)
+    if number != integer or integer <= 0:
+        raise ValueError(f"{field} must be a positive integer; got {value!r}")
+    return integer
+
+
+def resolve_dataset_contract(
+    rows: Iterable[Mapping[str, Any]],
+    logical_file: str,
+    *,
+    system: str = "SinergIA",
+) -> DatasetContract:
+    """Resolve one exact Config/Estructuras dataset contract without inference."""
+    system = _text(system)
+    logical_file = _text(logical_file)
+    if not system or not logical_file:
+        raise ValueError("system and logical_file must be non-empty")
+    source = [dict(row) for row in rows]
+    selected = [
+        row for row in source
+        if _text(row.get("Sistema")) == system
+        and _text(row.get("ArchivoLogico")) == logical_file
+    ]
+    if not selected:
+        raise ValueError(f"Estructuras contract not found for {system!r}/{logical_file!r}")
+
+    required_fields = {
+        "Sistema", "ArchivoLogico", "ColumnaOrden", "NombreColumna",
+        "AliasCanonico", "TipoDato", "Obligatoria", "PermiteNulos",
+    }
+    columns: list[DatasetColumnContract] = []
+    for row in selected:
+        missing_fields = sorted(required_fields.difference(row))
+        if missing_fields:
+            raise ValueError(f"Estructuras row missing fields: {missing_fields!r}")
+        order = _positive_integer(row.get("ColumnaOrden"), field="ColumnaOrden")
+        name = _text(row.get("NombreColumna"))
+        alias = _text(row.get("AliasCanonico"))
+        data_type = _text(row.get("TipoDato"))
+        if not name or not data_type:
+            raise ValueError(f"Estructuras row {order} requires NombreColumna and TipoDato")
+        if data_type.casefold() not in {"texto", "numero", "fecha", "bool"}:
+            raise ValueError(f"unsupported TipoDato for {name!r}: {data_type!r}")
+        columns.append(DatasetColumnContract(
+            order=order, name=name, alias=alias, data_type=data_type,
+            required=_strict_bool(row.get("Obligatoria"), field=f"{name}.Obligatoria"),
+            nullable=_strict_bool(row.get("PermiteNulos"), field=f"{name}.PermiteNulos"),
+        ))
+
+    columns.sort(key=lambda column: column.order)
+    orders = [column.order for column in columns]
+    if orders != list(range(1, len(columns) + 1)):
+        raise ValueError(f"ColumnaOrden must be contiguous 1..N; got {orders!r}")
+    names = [column.name for column in columns]
+    if len(names) != len(set(names)):
+        raise ValueError("duplicate NombreColumna in Estructuras contract")
+
+    token_owner: dict[str, str] = {}
+    for column in columns:
+        for token in (column.name, column.alias):
+            if not token:
+                continue
+            owner = token_owner.get(token)
+            if owner is not None and owner != column.name:
+                raise ValueError(f"ambiguous Estructuras canonical token {token!r}")
+            token_owner[token] = column.name
+    return DatasetContract(system=system, logical_file=logical_file, columns=tuple(columns))
